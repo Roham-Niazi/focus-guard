@@ -1,4 +1,5 @@
 import pickle
+import os
 
 
 def load_user_data():
@@ -28,13 +29,16 @@ def load_user_data():
 
 
 def save_user_data(eyes_distance, eyes_distance_pix, focal_length, alarm):
-	#Preparing settings dictionary
 	data={
 		"eyes_distance": eyes_distance,
 		"eyes_distance_pix": eyes_distance_pix,
 		"focal_length": focal_length,
 		"alarm": alarm
 	}
+
+	#Checking if the directory exists
+	if not os.path.exists("data"):
+		os.makedirs("data") #Creating directory
 
 	#Saving settings dictionary as a .pkl file
 	with open('data/user_data.pkl', 'wb') as f:
