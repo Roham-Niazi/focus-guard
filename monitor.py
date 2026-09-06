@@ -5,7 +5,7 @@ import notifier
 import config
 
 
-class Check():
+class Check:
 	def __init__(self):
 		self.last_distances=[]
 		self.last_angles=[]

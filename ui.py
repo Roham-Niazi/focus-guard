@@ -1,4 +1,4 @@
-from tkinter import *
+from tkinter import END
 from tkinter import messagebox as mb
 import customtkinter as ctk
 import threading
@@ -13,13 +13,12 @@ import monitor
 ctk.set_appearance_mode("dark")
 
 
-class App():
+class App:
 	def __init__(self):
-		#Defining basic features
 		self.root=ctk.CTk()
 		self.root.title("Focus Guard")
 		self.root.iconbitmap("assets/icon.ico")
-		self.root.geometry("600x550")
+		self.root.geometry("600x500")
 		self.root.grid_columnconfigure((0, 1), weight=1)
 
 		[self.eyes_distance,
@@ -30,9 +29,9 @@ class App():
 		self.check=monitor.Check()
 		self.vp=vision.VisionProcessor()
 		
-		#Calculating user image width and height 
+		#Calculating user image width and height
 		self.frame_width=config.FRAME_WIDTH
-		self.frame_height=int(self.vp.cam_width/self.vp.cam_width*config.FRAME_WIDTH)
+		self.frame_height=int(self.vp.cam_height/self.vp.cam_width*config.FRAME_WIDTH)
 
 		black_img=Image.new("RGB", (self.frame_width, self.frame_height), (0, 0, 0))
 		ctkimg=ctk.CTkImage(light_image=black_img, dark_image=black_img, size=(self.frame_width, self.frame_height))
@@ -40,10 +39,9 @@ class App():
 		self.cam_out_lbl=ctk.CTkLabel(self.root, image=ctkimg, text="")
 		self.cam_out_lbl.grid(row=0, column=0, columnspan=2)
 
-		#Calling update camera output with a delay
 		fps=self.check.get_fps()
 		delay=int(1000/fps)
-		self.cam_out_lbl.after(delay, lambda: self.update_cam_output(0))
+		self.cam_out_lbl_after_id=self.cam_out_lbl.after(delay, lambda: self.update_cam_output(0))
 
 		self.distance_lbl=ctk.CTkLabel(self.root, text="distance: unknown | angle: unknown")
 		self.distance_lbl.grid(row=1, column=0, columnspan=2, pady=(5, 0))
@@ -63,9 +61,9 @@ class App():
 
 		self.init_set_guide=ctk.CTkLabel(self.root, text="keep a distance of 60 cm from the monitor")
 
-		self.eyes_dis_lbl=ctk.CTkLabel(self.root, text="eyes distance(cm):")
+		self.eyes_dis_lbl=ctk.CTkLabel(self.root, text="outer eyes distance(cm):")
 		self.eyes_dis_entry=ctk.CTkEntry(self.root, placeholder_text="15")
-		if self.eyes_distance!=None: self.eyes_dis_entry.insert(END, self.eyes_distance)
+		if self.eyes_distance is not None: self.eyes_dis_entry.insert(END, self.eyes_distance)
 
 		self.init_set_save_btn=ctk.CTkButton(self.root, text="save", fg_color="#28a745", hover_color="#1d702f", command=self.save_init_settings)
 
@@ -78,7 +76,7 @@ class App():
 		#Initializing tray icon
 		tray_icon_img=Image.open("assets/icon.png")
 		menu=(
-			pystray.MenuItem('show window', self.show_wondow),
+			pystray.MenuItem('show window', self.show_window),
 			pystray.MenuItem('exit', self.exit_app)
 		)
 		self.tray_icon=pystray.Icon("name", tray_icon_img, "Focus Guard", menu)
@@ -90,8 +88,8 @@ class App():
 
 		#Showing fram on cam_out_lbl label
 		frame=Image.fromarray(frame)
-		frame=frame.resize((self.frame_height, self.frame_width))
-		ctkimg=ctk.CTkImage(light_image=frame, dark_image=frame, size=(self.frame_height, self.frame_width))
+		frame=frame.resize((self.frame_width, self.frame_height))
+		ctkimg=ctk.CTkImage(light_image=frame, dark_image=frame, size=(self.frame_width, self.frame_height))
 		self.cam_out_lbl.configure(image=ctkimg)
 
 		angle=self.vp.get_eyes_angle()
@@ -105,11 +103,10 @@ class App():
 			self.distance_lbl.configure(text="distance: unknown | angle: unknown")
 
 
-		#Calling update camera output with a delay
 		fps=self.check.get_fps()
 		self.fps_lbl.configure(text=f"fps: {fps}")
 		delay=int(1000/fps)
-		self.cam_out_lbl.after(delay, lambda: self.update_cam_output(frame_timestamp_ms))
+		self.cam_out_lbl_after_id=self.cam_out_lbl.after(delay, lambda: self.update_cam_output(frame_timestamp_ms))
 
 
 
@@ -131,7 +128,7 @@ class App():
 			return
 
 		self.eyes_distance_pix=self.vp.get_eyes_distance_pix()
-		if self.eyes_distance_pix==None:
+		if self.eyes_distance_pix is None:
 			mb.showerror("Error", "There is no face")
 			return
 
@@ -165,7 +162,6 @@ class App():
 		self.customize_save_btn.grid(row=5, column=0, columnspan=2, pady=10)
 
 	def save_customize_settings(self):
-		#Getting alarm type index
 		self.alarm=config.ALARM_OPTIONS.index(self.alarm_menu.get())
 
 		#Saving user data
@@ -188,11 +184,12 @@ class App():
 		self.root.withdraw()
 
 
-	def show_wondow(self):
+	def show_window(self):
 		self.root.after(0, self.root.deiconify)
 
 	def exit_app(self):
-		#Stopping tray icon and closing customtkinter window 
+		self.cam_out_lbl.after_cancel(self.cam_out_lbl_after_id)
+		self.vp.close()
 		self.tray_icon.stop()
 		self.root.after(0, self.root.destroy)
 

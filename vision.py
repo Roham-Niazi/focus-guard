@@ -12,10 +12,10 @@ import config
 
 class VisionProcessor:
 	def __init__(self):
-		self.video=cv2.VideoCapture(0)
+		self.cap=cv2.VideoCapture(0)
 
-		self.cam_width=self.video.get(cv2.CAP_PROP_FRAME_WIDTH)
-		self.cam_height=self.video.get(cv2.CAP_PROP_FRAME_HEIGHT)
+		self.cam_width=self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+		self.cam_height=self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
 		BaseOptions=mp.tasks.BaseOptions
 		FaceLandmarkerOptions=mp.tasks.vision.FaceLandmarkerOptions
@@ -36,10 +36,6 @@ class VisionProcessor:
 			num_faces=1
 		)
 		self.landmarker=self.FaceLandmarker.create_from_options(self.options)
-
-
-		self.cap=cv2.VideoCapture(0)
-
 
 
 	def detect_face(self, frame_timestamp_ms):
@@ -82,37 +78,37 @@ class VisionProcessor:
 
 
 	def get_eyes_distance_pix(self):
-		try:
-			#Getting the eyes' coordinates and calculating their distance
-			left_outer_eye=self.face[33]
-			right_outer_eye=self.face[263]
-
-			left=(left_outer_eye.x*self.cam_width, left_outer_eye.y*self.cam_height)
-			right=(right_outer_eye.x*self.cam_width, right_outer_eye.y*self.cam_height)
-
-			distance=math.sqrt(
-				(left[0]-right[0])**2 + (left[1]-right[1])**2
-			)
-			return distance
-		except:
+		if self.face is None:
 			return None #When there is no face in image
+		
+		#Getting the outer eyes' coordinates and calculating their distance
+		left_outer_eye=self.face[33]
+		right_outer_eye=self.face[263]
+
+		left=(left_outer_eye.x*self.cam_width, left_outer_eye.y*self.cam_height)
+		right=(right_outer_eye.x*self.cam_width, right_outer_eye.y*self.cam_height)
+
+		distance=math.sqrt(
+			(left[0]-right[0])**2 + (left[1]-right[1])**2
+		)
+		return distance
 
 
 	def get_eyes_angle(self):
-		try:
-			#Getting the eyes' coordinates and calculating their angle with the horizon
-			left_outer_eye=self.face[33]
-			right_outer_eye=self.face[263]
-
-			left=(left_outer_eye.x*self.cam_width, left_outer_eye.y*self.cam_height)
-			right=(right_outer_eye.x*self.cam_width, right_outer_eye.y*self.cam_height)
-
-			slope=(right[1]-left[1])/(right[0]-left[0])
-			angle=math.atan(slope)/math.pi*180
-
-			return abs(angle)
-		except:
+		if self.face is None:
 			return None #When there is no face in image
+
+		#Getting the outer eyes' coordinates and calculating their angle with the horizon
+		left_outer_eye=self.face[33]
+		right_outer_eye=self.face[263]
+
+		left=(left_outer_eye.x*self.cam_width, left_outer_eye.y*self.cam_height)
+		right=(right_outer_eye.x*self.cam_width, right_outer_eye.y*self.cam_height)
+
+		slope=(right[1]-left[1])/(right[0]-left[0])
+		angle=math.atan(slope)/math.pi*180
+
+		return abs(angle)
 
 
 	def calculate_eyes_distance(self, eyes_distance, focal_length):
@@ -124,3 +120,8 @@ class VisionProcessor:
 			distance=eyes_distance*focal_length/eyes_distance_pix
 
 		return distance
+
+
+	def close(self):
+		self.cap.release()
+		self.landmarker.close()
