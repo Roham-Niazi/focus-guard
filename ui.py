@@ -86,6 +86,12 @@ class App:
 	def update_cam_output(self, frame_timestamp_ms):
 		frame, frame_timestamp_ms=self.vp.detect_face(frame_timestamp_ms)
 
+		#Checking camera access
+		if frame is None:
+			mb.showerror("Error", "Unable to access the camera\nPlease restart the application")
+			self.exit_app()
+			return
+
 		#Showing fram on cam_out_lbl label
 		frame=Image.fromarray(frame)
 		frame=frame.resize((self.frame_width, self.frame_height))

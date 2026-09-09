@@ -41,6 +41,10 @@ class VisionProcessor:
 	def detect_face(self, frame_timestamp_ms):
 		success, frame=self.cap.read()
 
+		#Checking camera access
+		if not success:
+			return None, frame_timestamp_ms
+
 		rgb_frame=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
 		mp_image=mp.Image(
